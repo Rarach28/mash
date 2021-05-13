@@ -25,6 +25,8 @@ begin
         if(!export(jsonProducts,url,method))
         begin
             display("export(Sending of Json request failed), try it later")
+        else
+            display("export was successful")
         end
     end
 end
