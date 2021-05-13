@@ -1,0 +1,92 @@
+# export produktu
+# Zpracuj v pseudokódu postup exportu produktů do externího systému skrze REST API. 
+# Uvažuj export miliónu produktů. Dbej na SOLID architekturu, 
+# composition over inheritance, convention over configuration. KISS, DRY
+#Start 13.5.2021 17:00 (dd.mm.yyyy hh:mm)
+
+#main
+begin
+    data=["id","name","cost","category","images_path"] # columns you want to exprt
+    url = "http://api.example.com/services/json/" # url where you want to export data
+    method = "POST"
+    num amount=10000 # amount of data send/select at once, based on amount of products
+    exportPrepare(data,url,amount,method)
+end
+
+function exportPrepare(data,amount)
+begin
+    num i=0,offset=0
+    num count = getCount(product)
+    for(i=0;i<count;i++)
+    begin
+        num offset = i*10000
+        products = selectProducts(data,amount,offset)
+        jsonProducts = arrToJson(products)
+        if(!export(jsonProducts,url,method))
+        begin
+            display("export(Sending of Json request failed), try it later")
+        end
+    end
+end
+
+function export(jsonProducts,url,method) #here we will export json data
+begin
+    request = new HTTPRequest(url, method)
+    request->setRawPostData(jsonProducts)
+    request->send()
+    return request->getResponseBody(); # let's sey it return 1 on success, else 0
+end
+
+function arrToJson(data)
+begin
+    return json_encode(data)
+end
+
+
+
+
+#mysql (Model)
+#php conection :
+#####################
+ <?php
+
+$host = ""; /* Host name */
+$user = ""; /* User */
+$password = ""; /* Password */
+$dbname = ""; /* Database name */
+
+$con = mysqli_connect($host, $user, $password,$dbname);
+// Check connection
+if (!$con) {
+  die("Connection failed: " . mysqli_connect_error());
+}
+?>
+#####################
+
+function getCount(table)
+begin
+    return sql="SELECT COUNT(*) FROM table"
+end
+
+function selectproducts(data,amount,offset)
+begin
+    str ="" 
+    int oneToN = 0 # check if is there any coulumn with 1 to n relationship, default false
+    foreach(data as d) #here we will convert array to string to select, and check if there is 1 to n
+    begin
+        if(d="images_path") # if there is 1 to n, we will GROUP_CONCAT this coulumn so we can have cleaner output
+        begin
+            oneToN=1
+            d="GROUP_CONCAT(I.path)"
+        end
+        str=str.", ".d
+    end
+    if(oneToN)
+    begin
+        sql="SELECT str FROM product AS P INNER JOIN product_image AS pi ON pi.product_id = P.id INNER JOIN image AS I ON I.id = pi.image_id ORDER BY P.id LIMIT amount offset"
+    else
+        sql="SELECT str FROM product AS P ORDER BY P.id LIMIT amount offset"
+    end
+
+    return sql #return matrix -> [data[],data[],data[]] | data->[id,name,"image_path1,image_path2"]
+end
